@@ -7,12 +7,16 @@ var session = require('express-session');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(expressSession({ secret: 'thisIsASecret', resave: false, saveUninitialized: false }));
+app.use(session({ secret: 'thisIsASecret', resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 
 passport.serializeUser(function (user, done) {
   done(null, user.username);
+});
+
+passport.deserializeUser(function(user, done) {
+  done(null, user);
 });
 
 // hardcoded user for testing...
@@ -26,11 +30,20 @@ passport.use(new LocalStrategy(function(username, password, done) {
 
 //api routes
 app.get('/success', function(req, res) {
-  res.send("Hey, hello from the server!");
+  if (req.isAuthenticated()) {
+    res.send("Hey, " + req.user + ", hello from the server!");
+  } else {
+    res.redirect('/login');
+  }
 })
 
 app.get('/login', function(req, res) {
   res.sendFile(__dirname + '/public/login.html');
+});
+
+app.get('/logout', function (req, res) {
+  req.logout();
+  res.send('Logged out!');
 });
 
 app.post('/login', passport.authenticate('local', {
